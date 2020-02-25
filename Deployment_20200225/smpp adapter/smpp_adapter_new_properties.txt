@@ -1,0 +1,3 @@
+max-number-of-sending-retries=5
+
+retrial-smpp-error-codes=88,1070

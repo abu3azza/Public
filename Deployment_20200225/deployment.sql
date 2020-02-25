@@ -1,0 +1,66 @@
+Alter table H_SMS ADD (DELIVERY_DATE 	TIMESTAMP(6));
+
+CREATE OR REPLACE PROCEDURE "DROP_OTF_PARTITION" (
+   P_CAMPAIGN_ID          NUMBER,
+   P_STATUS           OUT NUMBER,
+   P_STATUS_MESSAGE   OUT VARCHAR2)
+AS
+   /*
+   Drop Campaigns' Partition from OTF Table.
+   CREATED BY Mohamed Abdelaty
+   STATUS
+      [0] SUCCES
+      [-100] FAILED
+   */
+   V_PARTITION_NAME      VARCHAR2 (30);
+   V_ARCHIVE_STATEMENT   VARCHAR2 (1000);
+   V_DROP_STATEMENT      VARCHAR2 (1000);
+BEGIN
+   BEGIN
+      SELECT PARTITION_NAME
+        INTO V_PARTITION_NAME
+        FROM USER_TAB_SUBPARTITIONS
+       WHERE TABLE_NAME = 'B2B_OTF_DIAL_INFO'
+             AND SUBPARTITION_NAME =
+                    (SELECT uo.subobject_name
+                       FROM B2B_OTF_DIAL_INFO, user_objects uo
+                      WHERE DBMS_ROWID.rowid_object (B2B_OTF_DIAL_INFO.ROWID) =
+                               uo.object_id
+                            AND B2B_OTF_DIAL_INFO.CAMPAIGN_ID = P_CAMPAIGN_ID
+                            AND ROWNUM < 2);
+
+
+
+      V_DROP_STATEMENT :=
+         'ALTER TABLE B2B_OTF_DIAL_INFO DROP PARTITION ' || V_PARTITION_NAME;
+      V_ARCHIVE_STATEMENT :=
+         'INSERT INTO H_B2B_OTF_DIAL_INFO SELECT * FROM B2B_OTF_DIAL_INFO PARTITION ('
+         || V_PARTITION_NAME
+         || ') ';
+
+      EXECUTE IMMEDIATE V_ARCHIVE_STATEMENT;
+
+      COMMIT;
+
+      EXECUTE IMMEDIATE V_DROP_STATEMENT;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+   END;
+
+
+   --UPDATE ADM_CAMPAIGNS
+    --  SET STATUS = 11
+    --WHERE CAMPAIGN_ID = P_CAMPAIGN_ID;
+
+   COMMIT;
+
+   P_STATUS := 0;
+   P_STATUS_MESSAGE := 'SUCCESS';
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      P_STATUS := -100;
+      P_STATUS_MESSAGE := SQLERRM;
+END;
