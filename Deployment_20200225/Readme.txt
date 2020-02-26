@@ -7,7 +7,7 @@ Deployment Details:
 5- Logging enhancements (Mail sent by Support Team) will be marked in mail for clarity.
 
 Deployment Steps:
-1- Run the attached script "deployment.sql"
+1- Run the attached scripts "deployment.sql" and "CleanFinishedCampaigns.sql"
 2- Run the attached script "MultipleFakeSender.sql"
 3- CD to SMSEngine location.
 4- Modify application.properties file to add the new properties in file "smpp_adapter_new_properties.txt"
